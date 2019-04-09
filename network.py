@@ -30,38 +30,42 @@ class Network(Thread):
                 time.sleep(1)
 
     def clear_txns(self, txns):
-        self.apply_transactions(txns)
         ids = list(map(lambda tx: tx.tx_id, txns))
         removed = []
         for i in reversed(range(len(self.txns))):
             if self.txns[i].tx_id in ids:
                 removed.append(self.txns[i].tx_id)
                 self.txns.pop(i) 
+        print("State: {}".format(str(self.state)))
 
-    def apply_transactions(self, txns):
+    def apply_txns(self, txns):
         for tx in txns:
             self.state[tx.u_from] -= tx.amnt
             self.state[tx.u_to] += tx.amnt
-        print("State: {}".format(str(self.state)))
 
     def generate_background_txns(self):
-        first_ind = int(random() * len(self.users))
-        first = self.users[first_ind]
-        second_ind = int(random() * len(self.users)) 
-        while second_ind == first_ind:
+        while True:
+            first_ind = int(random() * len(self.users))
+            first = self.users[first_ind]
             second_ind = int(random() * len(self.users)) 
-        second = self.users[second_ind] 
+            while second_ind == first_ind:
+                second_ind = int(random() * len(self.users)) 
+            second = self.users[second_ind] 
 
-        # Txn is someone sending amnt < 100 to another user
-        out = int(random() * 100) + 1
+            # Txn is someone sending amnt < 100 to another user
+            out = int(random() * 100) + 1
 
-        # Need to work in invalid pc
-        new_tx = Transaction(self.next_id, first, second, out)
-        self.txns.append(new_tx)
-        self.next_id += 1
+            # Need to work in invalid pc
+            new_tx = Transaction(self.next_id, first, second, out)
+            if self.validate_tx(new_tx):
+                self.apply_txns([new_tx])
+                self.txns.append(new_tx)
+            self.next_id += 1
 
-        time.sleep(1 / (self.tx_s + (random() * self.tx_s * 2)))
-        self.generate_background_txns()
+            time.sleep(1 / (self.tx_s + (random() * self.tx_s * 2)))
+
+    def validate_tx(self, tx):
+        return (self.state[tx.u_from] - tx.amnt >= 0) and (self.state[tx.u_from] + tx.amnt >= 0)
 
     def get_txns(self, max_amnt):
         return self.txns[:max_amnt]
