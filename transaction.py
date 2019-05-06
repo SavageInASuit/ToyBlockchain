@@ -8,3 +8,9 @@ class Transaction(object):
 
     def varify(self, state):
         print("varifying transaction")
+
+    def __str__(self):
+        return "<Transaction {} from {} to {} >".format(self.amnt, self.u_from, self.u_to)
+
+    def __repr__(self):
+        return "<Transaction {} - {} to {}>".format(self.amnt, self.u_from, self.u_to)
